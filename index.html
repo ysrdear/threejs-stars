@@ -1,0 +1,171 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>STARS</title>
+    <link rel="stylesheet" href="src/reset.css" />
+    <style>
+        html{overflow: hidden;}
+
+        .wrap{position:absolute;top:0;left:0; bottom:0;right: 0;background: #000;}
+        .wrap canvas{position: absolute;bottom:0;left:50%;margin-left: -960px;}
+    </style>
+</head>
+<body>
+    <div class="wrap"></div>
+    <!--scripts-->
+    <script type="text/javascript" src="src/jquery.js"></script>
+    <script type="text/javascript" src="src/three.js"></script>
+    <script type="text/javascript" src="src/Tween.js"></script>
+    <script type="text/javascript">
+        var scene = new THREE.Scene()
+        var renderer = new THREE.WebGLRenderer({
+            antialias:true
+        })
+
+        renderer.setSize(1920, 1080)
+        $('.wrap').append(renderer.domElement)
+
+        var camera = new THREE.PerspectiveCamera(50, window.innerWidth/window.innerHeight , 0.1, 3000)
+        camera.position.set(0,0,680)
+
+        var group = new THREE.Group()
+        scene.add(group)
+
+        var geometry = new THREE.SphereGeometry(500,80,32)
+        var material = new THREE.MeshBasicMaterial({wireframe: true , color : 0x0a7cc1})
+
+        var mesh = new THREE.Mesh(geometry,material)
+        group.add(mesh)
+
+        var geometry2 = new THREE.SphereGeometry(500.5,80,32)
+        var material2 = new THREE.PointsMaterial({
+            size:2,
+            transparent: true,
+            color: 0x52abe0,
+            blending : THREE.AdditiveBlending
+        })
+        var mesh2 = new THREE.Points(geometry2,material2)
+        group.add(mesh2)
+
+        var geometry3 = new THREE.SphereGeometry(490,80,32)
+        var material3 = new THREE.MeshBasicMaterial({color:0x000000})
+
+        var mesh3 = new THREE.Mesh(geometry3,material3)
+        group.add(mesh3)
+
+        group.position.set(0,-570,250)
+        group.rotation.z = Math.PI/2
+
+
+        function render() {
+            mesh.rotation.y -= 0.0002
+            mesh2.rotation.y -= 0.0002
+
+            renderer.render(scene,camera)
+            requestAnimationFrame(render)
+
+            TWEEN.update()
+        }
+
+        render()
+
+
+        function Stars(num) {
+            this.width = 1920
+            this.height  = 1080
+
+            this.init = function(){
+                for(var i = 0 ; i < num ; i++){
+                    var spriteMaterial = new THREE.SpriteMaterial( { map: this.getTexture()} );
+                    var sprite = new THREE.Sprite( spriteMaterial );
+                    sprite.material.needsUpdate = true
+                    scene.add(sprite)
+                    this.initStar(sprite)
+
+                    this.shine(sprite,0)
+                    this.animate(sprite)
+                }
+            }
+            this.initStar = function (star) {
+                //大小
+                var scale = Math.random()*10
+                star.scale.set(scale, scale, scale)
+
+                //位置
+                star.position.set( this.width * Math.random() - this.width/2,  this.height * Math.random() - this.height/2 ,0 )
+            }
+            this.shine = function (star,step) {
+                var self = this
+                if(!step){
+                    setTimeout(function () {
+                        self.shine(star,1)
+                    },5000 * Math.random())
+                }else if(step === 1){
+                    new TWEEN.Tween(star.material)
+                        .to({opacity: 0}, Math.random()*2000)
+                        .onComplete(function () {
+                            self.shine(star,2)
+                        })
+                        .start()
+                }else{
+                    new TWEEN.Tween(star.material)
+                        .to({opacity: 1}, Math.random()*2000)
+                        .onComplete(function () {
+                            self.shine(star,0)
+                        })
+                        .start()
+                }
+            }
+            this.animate = function (star) {
+                var self = this ,
+                    pos = { z : star.position.z},
+                    newZ = pos.z - 400 ;
+                new TWEEN.Tween(pos)
+                    .to({z : newZ}, ( Math.random() +0.5)*20000)
+                    .onUpdate(function () {
+                        star.position.z = pos.z
+                    })
+                    .onComplete(function () {
+                        if(pos.z < -1400){
+                            self.initStar(star)
+                        }
+                        self.animate(star)
+                    })
+                    .start()
+            }
+            
+            this.getTexture = function () {
+                var canvas = document.createElement( 'canvas' ),
+                    context = canvas.getContext('2d'),
+                    r = 16
+
+                canvas.width = 16
+                canvas.height = 16
+
+                fill = context.createRadialGradient(r/2,r/2,0,r/2,r/2,r)
+                fill.addColorStop(0.1 , "#fff");
+                fill.addColorStop(0.15 , "hsl(217, 86%, 40%)");
+                fill.addColorStop(0.25 , "hsl(217, 66%, 6%)");
+                fill.addColorStop(1 , "transparent");
+
+
+                context.fillStyle = fill;
+                context.arc(r /2, r/2  , r , 0 , Math.PI * 2 );
+                context.fill()
+
+                var texture = new THREE.CanvasTexture(canvas);
+                return texture;
+            }
+
+        }
+
+        var star = new Stars(500)
+        star.init()
+
+
+
+
+    </script>
+</body>
+</html>
